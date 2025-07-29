@@ -1,0 +1,64 @@
+
+if declare -F is_function >/dev/null; then :; else
+    is_function() { declare -F "$1" >/dev/null; }
+fi
+
+if is_function "ungoon"; then :; else
+ungoon() {
+    export TMUX_WINDOW_NAME=$(hostname -s)
+    unset PROJECT_DIR
+    cd
+}
+fi
+
+if is_function "cdg"; then :; else
+cdg() {
+    if (( $# == 0 )); then
+	if [ -d "$PROJECT_DIR" ]; then
+	    export TMUX_WINDOW_NAME=$(basename $PROJECT_DIR)
+	fi
+    else
+	if [ -d "$1" ]; then
+	    export PROJECT_DIR="$1"
+	    export TMUX_WINDOW_NAME="$(basename $1)"
+	else
+	    local _parent="$(dirname $1)"
+	    local _name="$(basename $1)"
+	    local _dir="$(find "$_parent" -type d -name "${_name}*" | head -1)"
+	    if [ -d "$_dir" ]; then
+		export PROJECT_DIR="$_dir"
+		export TMUX_WINDOW_NAME="$(basename $1)"
+	    else
+		ungoon
+	    fi
+	fi
+    fi
+    cd $PROJECT_DIR
+    [ -r ./postactivate ] && . ./postactivate
+    [ -r ./.postactivate ] && . ./.postactivate
+}
+fi
+
+if is_function "goon"; then :; else
+goon() {
+  cd $GOPATH/src/github.com/rstms
+  if (( $# < 1 )); then
+    ls -1 .
+  else
+    if [ $1 = '.' ]; then
+      ungoon
+    else 
+      if [ ${1} = "init" ]; then
+	~/go/bin/goon-template init ${2}
+      else 
+	if [ -d ${1} ]; then
+	    cdg ${1}
+	else
+	    compgen -f -- "${1}"
+	fi
+      fi
+    fi
+  fi
+}
+complete -f goon
+fi

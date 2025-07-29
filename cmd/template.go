@@ -31,36 +31,8 @@ POSSIBILITY OF SUCH DAMAGE.
 package cmd
 
 import (
-	"os"
-
-	"github.com/spf13/cobra"
+	"embed"
 )
 
-var cfgFile string
-
-var rootCmd = &cobra.Command{
-	Version: "0.0.3",
-	Use:     "goon-template",
-	Short:   "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-}
-
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
-}
-
-func init() {
-	cobra.OnInitialize(InitConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file")
-	OptionString(rootCmd, "logfile", "l", "", "log filename")
-	OptionSwitch(rootCmd, "debug", "", "produce debug output")
-	OptionSwitch(rootCmd, "verbose", "v", "increase verbosity")
-	OptionSwitch(rootCmd, "force", "", "bypass confirmation prompts")
-}
+//go:embed template/*
+var template embed.FS

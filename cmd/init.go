@@ -31,36 +31,36 @@ POSSIBILITY OF SUCH DAMAGE.
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
+	"os"
+	"os/exec"
 )
 
-var cfgFile string
-
-var rootCmd = &cobra.Command{
-	Version: "0.0.3",
-	Use:     "goon-template",
-	Short:   "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-}
-
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
+var initCmd = &cobra.Command{
+	Use:   "init PROGRAM_NAME",
+	Short: "Create a new CLI project from this template",
+	Long: `
+The goon-template project is both the template and the tempate installer.
+goon-template init PROGRAM_NAME will create a new project and initialize
+it using the goon_init script.
+`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		content, err := template.ReadFile("template/goon_init")
+		cobra.CheckErr(err)
+		initScript, err := os.CreateTemp("", "goon_init")
+		defer os.Remove(initScript.Name())
+		_, err = initScript.Write(content)
+		cobra.CheckErr(err)
+		initScript.Close()
+		command := exec.Command("/bin/sh", initScript.Name(), args[0])
+		command.Stdout = os.Stdout
+		command.Stderr = os.Stderr
+		err = command.Run()
+		cobra.CheckErr(err)
+	},
 }
 
 func init() {
-	cobra.OnInitialize(InitConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file")
-	OptionString(rootCmd, "logfile", "l", "", "log filename")
-	OptionSwitch(rootCmd, "debug", "", "produce debug output")
-	OptionSwitch(rootCmd, "verbose", "v", "increase verbosity")
-	OptionSwitch(rootCmd, "force", "", "bypass confirmation prompts")
+	rootCmd.AddCommand(initCmd)
 }

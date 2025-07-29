@@ -104,7 +104,7 @@ optional edit command opens current config file in system editor
 }
 
 func initConfigFile() {
-	file := configFile
+	file := cfgFile
 	if file == "" {
 		userConfig, err := os.UserConfigDir()
 		cobra.CheckErr(err)

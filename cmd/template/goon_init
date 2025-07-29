@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+
+fail() {
+    echo >&2 "fail:" "$@" 
+    exit 1
+}
+
+usage() {
+    echo >&2 goon init REPO_NAME
+    exit 1
+}
+
+tmpfile=$(mktemp)
+cleanup() {
+    if [ -n "$tmpfile" ]; then
+	if [ -e "$tmpfile" ]; then
+	    rm $tmpfile
+	fi
+    fi
+}
+trap cleanup EXIT
+
+awkEdit() {
+    cp $1 $tmpfile
+    awk "$2" <$tmpfile >$1
+}
+
+addOptionFlag() {
+    filename=$1
+    name=$2
+    flag=$3
+    description=$4
+    export OPTION="OptionSwitch(rootCmd, \"${name}\", \"${flag}\", \"${description}\")"
+    awkEdit $filename '/cobra.OnInitialize/{printf("%s\n%s\n", $0, ENVIRON["OPTION"]); next;}{print}'
+}
+
+addOptionString() {
+    filename=$1
+    name=$2
+    flag=$3
+    default=$4
+    description=$5
+    export OPTION="OptionString(rootCmd, \"${name}\", \"${flag}\", \"${default}\", \"${description}\")"
+    awkEdit $filename '/cobra.OnInitialize/{printf("%s\n%s\n", $0, ENVIRON["OPTION"]); next;}{print}'
+}
+
+
+[ -n "$GH_ORG" ] || fail GH_ORG unset
+[ -n "$1" ] || usage
+
+export repo=$1
+repo_home=~/go/src/github.com/$GH_ORG
+repo_template=$repo_home/goon-template
+repo_root=$repo_home/$repo
+
+if [ -d "$repo_root" ]; then
+    fail "repo exists"
+fi
+
+mkdir $repo_root
+cd $repo_root
+
+echo "# $repo" >README.md
+echo "0.0.1" >VERSION
+echo "alias $repo=./$repo" >.postactivate
+chmod +x .postactivate
+
+echo "$repo" >.gitignore
+cat $repo_template/.gitignore >>.gitignore
+cp $repo_template/.bumpversion.cfg .
+cp $repo_template/Makefile .
+
+
+go mod init
+cobra-cli init
+
+cp $repo_template/main_test.go .
+cp $repo_template/cmd/cobra.go cmd/cobra.go
+cp $repo_template/cmd/root_test.go cmd/root_test.go
+cp $repo_template/cmd/config.go cmd/config.go
+cp $repo_template/cmd/version.go cmd/version.go
+
+###############################################################################
+#
+# edit cmd/root.go
+#
+###############################################################################
+
+addOptionFlag cmd/root.go verbose v "increase verbosity"
+addOptionFlag cmd/root.go debug '' "produce debug output"
+addOptionString cmd/root.go config c '' "config file"
+addOptionString cmd/root.go logfile l '' "log filename"
+
+awkEdit cmd/root.go '/Use:/{printf("%s\n%s\n", "Version: \"0.0.1\",", $0);next}{print}'
+
+awkEdit cmd/root.go '/toggle/{next}{print}'
+awkEdit cmd/root.go '/rootCmd.PersistentFlags/{next}{print}'
+
+awkEdit cmd/root.go '{gsub(/OnInitialize\(initConfig\)/, "OnInitialize(InitConfig)"); print}'
+
+awkEdit cmd/root.go '/^[[:space:]]*"fmt"[[:space:]]*$/{next} {print}'
+awkEdit cmd/root.go '/^[[:space:]]*"github.com\/spf13\/viper"[[:space:]]*$/{next} {print}'
+
+# remove initConfig function
+awkEdit cmd/root.go '/^\/\/ initConfig reads/{exit} {print}'
+
+
+###############################################################################
+#
+# edit cmd/root_test.go
+# 
+###############################################################################
+awkEdit cmd/root_test.go '/^package main/{print "package cmd"; next} /^func TestMain/{gsub(/TestMain/, "TestRoot"); print; next}{print}'
+
+
+###############################################################################
+#
+# version command
+#
+###############################################################################
+cobra-cli add version
+awkEdit cmd/version.go '{gsub(/"version called"/, "rootCmd.Name() + \" version \" + rootCmd.Version"); print}'
+
+
+###############################################################################
+#
+# create testdata
+#
+###############################################################################
+mkdir testdata
+cp $repo_template/config.yaml testdata
+mkdir cmd/testdata
+cp $repo_template/config.yaml cmd/testdata
+
+
+###############################################################################
+#
+# initial go build
+#
+###############################################################################
+go mod tidy
+make
+
+###############################################################################
+#
+# git init and commit
+#
+###############################################################################
+git init
+git add .
+git commit -m "initial commit"

@@ -31,36 +31,32 @@ POSSIBILITY OF SUCH DAMAGE.
 package cmd
 
 import (
-	"os"
-
+	"fmt"
 	"github.com/spf13/cobra"
 )
 
-var cfgFile string
+var bashrcCmd = &cobra.Command{
+	Use:   "bashrc",
+	Short: "output the bash function source",
+	Long: `
+Output bash function source for inclusion into the bash environment.
 
-var rootCmd = &cobra.Command{
-	Version: "0.0.3",
-	Use:     "goon-template",
-	Short:   "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-}
+Defines the functions: is_function, goon, ungoon, cdg
 
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
-	}
+Include the following lines in .bashrc:
+
+if [ -x ~/go/bin/goon-template ]; then
+    eval "$(~/go/bin/goon-template bashrc)"
+fi
+
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		content, err := template.ReadFile("template/bash_functions")
+		cobra.CheckErr(err)
+		fmt.Println(string(content))
+	},
 }
 
 func init() {
-	cobra.OnInitialize(InitConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file")
-	OptionString(rootCmd, "logfile", "l", "", "log filename")
-	OptionSwitch(rootCmd, "debug", "", "produce debug output")
-	OptionSwitch(rootCmd, "verbose", "v", "increase verbosity")
-	OptionSwitch(rootCmd, "force", "", "bypass confirmation prompts")
+	rootCmd.AddCommand(bashrcCmd)
 }

@@ -159,8 +159,8 @@ func ProgramName() string {
 func InitConfig() {
 	viper.SetEnvPrefix(ProgramName())
 	viper.AutomaticEnv()
-	if configFile != "" {
-		viper.SetConfigFile(configFile)
+	if cfgFile != "" {
+		viper.SetConfigFile(cfgFile)
 	} else {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
