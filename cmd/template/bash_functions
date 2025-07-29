@@ -5,8 +5,11 @@ fi
 
 if is_function "ungoon"; then :; else
 ungoon() {
-    export TMUX_WINDOW_NAME=$(hostname -s)
-    unset PROJECT_DIR
+    if [ -n "$PROJECT_DIR" ]; then
+	export TMUX_WINDOW_NAME=$(hostname -s)
+	unalias $(basename $PROJECT_DIR)
+	unset PROJECT_DIR
+    fi
     cd
 }
 fi
