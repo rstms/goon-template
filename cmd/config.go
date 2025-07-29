@@ -33,36 +33,121 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"os/user"
+	"path/filepath"
+	"runtime"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var configCmd = &cobra.Command{
-	Use:   "config",
+	Use:   "config [edit]",
 	Short: "output configuration",
 	Long: `
-write current configuration data to stdout in YAML format
+write current configuration file to stdout in YAML format
+add comments if --verbose
+optional edit command opens current config file in system editor
 `,
+	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
-		file, err := os.CreateTemp("", "*.yaml")
-		cobra.CheckErr(err)
-		func() {
-			defer file.Close()
-			err = viper.WriteConfigTo(file)
-			cobra.CheckErr(err)
-		}()
-		defer func() {
-			cobra.CheckErr(os.Remove(file.Name()))
-		}()
-		data, err := os.ReadFile(file.Name())
-		cobra.CheckErr(err)
-		filename := viper.ConfigFileUsed()
-		if filename != "" {
-			fmt.Printf("# %s\n", filename)
+
+		name := ProgramName()
+		if len(args) > 0 {
+			switch args[0] {
+			case "cat":
+			case "file":
+				fmt.Println(viper.ConfigFileUsed())
+				return
+			case "edit":
+				editConfigFile()
+				return
+			case "init":
+				initConfigFile()
+				return
+			default:
+				cobra.CheckErr(fmt.Errorf("unknown command: %s", args[0]))
+			}
 		}
-		fmt.Println(string(data))
+		if ViperGetBool("verbose") {
+			currentUser, err := user.Current()
+			cobra.CheckErr(err)
+			hostname, err := os.Hostname()
+			cobra.CheckErr(err)
+			fmt.Printf("# %s config\n", name)
+			fmt.Printf("# active: %s\n", filepath.Clean(viper.ConfigFileUsed()))
+			fmt.Printf("# generated: %s by %s@%s (%s_%s)\n",
+				time.Now().Format(time.DateTime),
+				currentUser.Username, hostname,
+				runtime.GOOS, runtime.GOARCH,
+			)
+
+			home, err := os.UserHomeDir()
+			cobra.CheckErr(err)
+			fmt.Printf("# user_home_dir: %s\n", home)
+
+			userConfig, err := os.UserConfigDir()
+			cobra.CheckErr(err)
+			fmt.Printf("# default_config_dir: %s\n", filepath.Join(userConfig, name))
+
+			userCache, err := os.UserCacheDir()
+			cobra.CheckErr(err)
+			fmt.Printf("# default_cache_dir: %s\n", filepath.Join(userCache, name))
+			fmt.Println("")
+		}
+
+		err := viper.WriteConfigTo(os.Stdout)
+		cobra.CheckErr(err)
 	},
+}
+
+func initConfigFile() {
+	file := configFile
+	if file == "" {
+		userConfig, err := os.UserConfigDir()
+		cobra.CheckErr(err)
+		dir := filepath.Join(userConfig, ProgramName())
+		if !IsDir(dir) {
+			if !Confirm(fmt.Sprintf("Create directory '%s'", dir)) {
+				return
+			}
+			err := os.Mkdir(dir, 0700)
+			cobra.CheckErr(err)
+		}
+		file = filepath.Join(dir, "config.yaml")
+	}
+	if IsFile(file) {
+		if !Confirm(fmt.Sprintf("Overwrite config file '%s'", file)) {
+			return
+		}
+	}
+	ViperSet("force", false)
+	err := viper.WriteConfigAs(file)
+	cobra.CheckErr(err)
+	fmt.Printf("Default configuration written to %s\n", file)
+}
+
+func editConfigFile() {
+	var editCommand string
+	if runtime.GOOS == "windows" {
+		editCommand = "notepad"
+	} else {
+		editCommand = os.Getenv("VISUAL")
+		if editCommand == "" {
+			editCommand = os.Getenv("EDITOR")
+			if editCommand == "" {
+				editCommand = "vi"
+			}
+		}
+	}
+	editor := exec.Command(editCommand, viper.ConfigFileUsed())
+	editor.Stdin = os.Stdin
+	editor.Stdout = os.Stdout
+	editor.Stderr = os.Stderr
+	err := editor.Run()
+	cobra.CheckErr(err)
 }
 
 func init() {

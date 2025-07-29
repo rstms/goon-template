@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
@@ -11,37 +12,82 @@ import (
 	"strings"
 )
 
-var ViperPrefix = ""
+var ViperPrefix = ProgramName() + ".cli."
 var LogFile *os.File
 
-func ViperKey(name string) string {
-	return ViperPrefix + strings.ReplaceAll(name, "-", "_")
+var CONFIRM_ACCEPT_MESSAGE = "Proceeding"
+var CONFIRM_REJECT_MESSAGE = "Cowardly refused"
+
+func viperKey(name string) string {
+	return ViperPrefix + strings.ToLower(strings.ReplaceAll(name, "-", "_"))
 }
 
-func OptionSwitch(name, flag, description string) {
-
-	if flag == "" {
-		rootCmd.PersistentFlags().Bool(name, false, description)
-	} else {
-		rootCmd.PersistentFlags().BoolP(name, flag, false, description)
-	}
-
-	viper.BindPFlag(ViperKey(name), rootCmd.PersistentFlags().Lookup(name))
+func ViperGetBool(key string) bool {
+	return viper.GetBool(viperKey(key))
 }
 
-func OptionString(name, flag, defaultValue, description string) {
+func ViperGetString(key string) string {
+	return ExpandPath(viper.GetString(viperKey(key)))
+}
 
-	if flag == "" {
-		rootCmd.PersistentFlags().String(name, defaultValue, description)
+func ViperGetInt(key string) int {
+	return viper.GetInt(viperKey(key))
+}
+
+func ViperGetInt64(key string) int64 {
+	return viper.GetInt64(viperKey(key))
+}
+
+func ViperSet(key string, value any) {
+	viper.Set(viperKey(key), value)
+}
+
+func ViperSetDefault(key string, value any) {
+	viper.SetDefault(viperKey(key), value)
+}
+
+func OptionSwitch(cmd *cobra.Command, name, flag, description string) {
+	if cmd == rootCmd {
+		if flag == "" {
+			rootCmd.PersistentFlags().Bool(name, false, description)
+		} else {
+			rootCmd.PersistentFlags().BoolP(name, flag, false, description)
+		}
+		viper.BindPFlag(viperKey(name), rootCmd.PersistentFlags().Lookup(name))
 	} else {
-		rootCmd.PersistentFlags().StringP(name, flag, defaultValue, description)
+		if flag == "" {
+			cmd.Flags().Bool(name, false, description)
+		} else {
+			cmd.Flags().BoolP(name, flag, false, description)
+		}
+		prefix := strings.ToLower(strings.ReplaceAll(cmd.Name(), "-", "_")) + "."
+		viper.BindPFlag(viperKey(prefix+name), cmd.Flags().Lookup(name))
 	}
+}
 
-	viper.BindPFlag(ViperKey(name), rootCmd.PersistentFlags().Lookup(name))
+func OptionString(cmd *cobra.Command, name, flag, defaultValue, description string) {
+
+	if cmd == rootCmd {
+		if flag == "" {
+			rootCmd.PersistentFlags().String(name, defaultValue, description)
+		} else {
+			rootCmd.PersistentFlags().StringP(name, flag, defaultValue, description)
+		}
+
+		viper.BindPFlag(viperKey(name), rootCmd.PersistentFlags().Lookup(name))
+	} else {
+		if flag == "" {
+			cmd.PersistentFlags().String(name, defaultValue, description)
+		} else {
+			cmd.PersistentFlags().StringP(name, flag, defaultValue, description)
+		}
+		prefix := strings.ToLower(strings.ReplaceAll(cmd.Name(), "-", "_")) + "."
+		viper.BindPFlag(viperKey(prefix+name), cmd.PersistentFlags().Lookup(name))
+	}
 }
 
 func OpenLog() {
-	filename := viper.GetString("logfile")
+	filename := ViperGetString("logfile")
 	LogFile = nil
 	if filename == "stdout" || filename == "-" {
 		log.SetOutput(os.Stdout)
@@ -59,7 +105,7 @@ func OpenLog() {
 		log.Printf("%s v%s startup\n", rootCmd.Name(), rootCmd.Version)
 		cobra.OnFinalize(CloseLog)
 	}
-	if viper.GetBool("debug") {
+	if ViperGetBool("debug") {
 		log.SetFlags(log.Flags() | log.Lshortfile)
 	}
 }
@@ -102,23 +148,27 @@ func ExpandPath(pathname string) string {
 		}
 		pathname = filepath.Join(home, pathname[1:])
 	}
+	pathname = os.ExpandEnv(pathname)
 	return pathname
 }
 
+func ProgramName() string {
+	return strings.ToLower(strings.ReplaceAll(rootCmd.Name(), "-", "_"))
+}
+
 func InitConfig() {
-	viper.SetEnvPrefix(strings.ToLower(rootCmd.Name()))
+	viper.SetEnvPrefix(ProgramName())
 	viper.AutomaticEnv()
-	filename := viper.GetString("config")
-	if filename != "" {
-		viper.SetConfigFile(filename)
+	if configFile != "" {
+		viper.SetConfigFile(configFile)
 	} else {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 		userConfig, err := os.UserConfigDir()
 		cobra.CheckErr(err)
-		viper.AddConfigPath(filepath.Join(home, "."+rootCmd.Name()))
-		viper.AddConfigPath(filepath.Join(userConfig, rootCmd.Name()))
-		viper.AddConfigPath(filepath.Join("/etc", rootCmd.Name()))
+		viper.AddConfigPath(filepath.Join(home, "."+ProgramName()))
+		viper.AddConfigPath(filepath.Join(userConfig, ProgramName()))
+		viper.AddConfigPath(filepath.Join("/etc", ProgramName()))
 		viper.SetConfigType("yaml")
 		viper.SetConfigName("config")
 	}
@@ -130,7 +180,39 @@ func InitConfig() {
 		}
 	}
 	OpenLog()
-	if viper.ConfigFileUsed() != "" && viper.GetBool("verbose") {
+	if viper.ConfigFileUsed() != "" && ViperGetBool("verbose") {
 		log.Println("Using config file:", viper.ConfigFileUsed())
+	}
+}
+
+func Confirm(prompt string) bool {
+	if ViperGetBool("force") {
+		return true
+	}
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Printf("%s [y/N]: ", prompt)
+		response, err := reader.ReadString('\n')
+		cobra.CheckErr(err)
+		response = strings.ToLower(strings.TrimSpace(response))
+		if response == "y" || response == "yes" {
+			msg := ViperGetString("messages.confirm_accept")
+			if msg == "" {
+				msg = CONFIRM_ACCEPT_MESSAGE
+			}
+			if msg != "" {
+				fmt.Println(msg)
+			}
+			return true
+		} else if response == "n" || response == "no" || response == "" {
+			msg := ViperGetString("messages.confirm_reject")
+			if msg == "" {
+				msg = CONFIRM_REJECT_MESSAGE
+			}
+			if msg != "" {
+				fmt.Println(msg)
+			}
+			return false
+		}
 	}
 }

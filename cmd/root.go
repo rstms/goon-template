@@ -36,26 +36,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cfgFile string
+var configFile string
 
-// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Version: "0.0.1",
 	Use:     "goon-template",
 	Short:   "A brief description of your application",
 	Long: `A longer description that spans multiple lines and likely contains
 examples and usage of using your application. For example:
-
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
@@ -65,17 +58,9 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(InitConfig)
-	OptionString("logfile", "l", "", "log filename")
-	OptionString("config", "c", "", "config file")
-	OptionSwitch("debug", "", "produce debug output")
-	OptionSwitch("verbose", "v", "increase verbosity")
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.goon-template.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
+	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "configuration file")
+	OptionString(rootCmd, "logfile", "l", "", "log filename")
+	OptionSwitch(rootCmd, "debug", "", "produce debug output")
+	OptionSwitch(rootCmd, "verbose", "v", "increase verbosity")
+	OptionSwitch(rootCmd, "force", "", "bypass confirmation prompts")
 }

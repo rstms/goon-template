@@ -2,13 +2,14 @@
 
 program != basename $$(pwd)
 
+go_version = go1.24.5
+
 latest_release != gh release list --json tagName --jq '.[0].tagName' | tr -d v
 version != cat VERSION
 
-gitclean = if git status --porcelain | grep '^.*$$'; then echo git status is dirty; false; else echo git status is clean; true; fi
+rstms_modules = $(shell awk <go.mod '/^module/{next} /rstms/{print $$1}')
 
-install_dir = /usr/local/bin
-postinstall =
+gitclean = $(if $(shell git status --porcelain),$(error git status is dirty),$(info git status is clean))
 
 $(program): build
 
@@ -19,13 +20,13 @@ fmt: go.sum
 	fix go fmt . ./...
 
 go.mod:
-	go mod init
+	$(go_version) mod init
 
 go.sum: go.mod
 	go mod tidy
 
 install: build
-	doas install -m 0755 $(program) $(install_dir)/$(program) $(postinstall)
+	go install
 
 test: fmt
 	go test -v -failfast . ./...
@@ -34,17 +35,21 @@ debug: fmt
 	go test -v -failfast -count=1 -run $(test) . ./...
 
 release:
-	@$(gitclean) || { [ -n "$(dirty)" ] && echo "allowing dirty release"; }
+	$(gitclean)
 	@$(if $(update),gh release delete -y v$(version),)
 	gh release create v$(version) --notes "v$(version)"
 
+update:
+	@echo updating modules
+	$(foreach module,$(rstms_modules),go get $(module)@latest;)
+
 clean:
-	rm -f $(program)
+	rm -f $(program) *.core 
 	go clean
 
 sterile: clean
 	which $(program) && go clean -i || true
-	go clean -r || true
+	go clean
 	go clean -cache
 	go clean -modcache
 	rm -f go.mod go.sum
