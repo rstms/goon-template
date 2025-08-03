@@ -37,17 +37,21 @@ import (
 
 var bashrcCmd = &cobra.Command{
 	Use:   "bashrc",
-	Short: "output the bash function source",
+	Short: "output bash function source",
 	Long: `
-Output bash function source for inclusion into the bash environment.
+Output function definitions to be sourced into the bash environment
 
-Defines the functions: is_function, goon, ungoon, cdg
+Defines these functions: 
 
-Include the following lines in .bashrc:
+    goon	    display or activate a project
+    ungoon	    undo the effects of goon 
+    cdg		    cd to the goon project dir
+    versions	    display installed go versions 
+    is_function	    (internal use)
 
-if [ -x ~/go/bin/goon-template ]; then
-    eval "$(~/go/bin/goon-template bashrc)"
-fi
+Include the following line in .bashrc:
+
+goon-template version >/dev/null 2>&1 && eval "$(goon-template bashrc)" || true
 
 `,
 	Run: func(cmd *cobra.Command, args []string) {

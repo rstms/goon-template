@@ -51,15 +51,18 @@ goon() {
     if [ $1 = '.' ]; then
       ungoon
     else 
-      if [ ${1} = "init" ]; then
-	~/go/bin/goon-template init ${2}
-      else 
-	if [ -d ${1} ]; then
-	    cdg ${1}
-	else
-	    compgen -f -- "${1}"
-	fi
-      fi
+      case ${1} in 
+	init) ~/go/bin/goon-template init ${2} ;;
+	versions) find 2>/dev/null / -type f -name go | xargs go version | awk -F':' '{print $2}' | tr -d ' ' | sort -V;;
+	template) goon-template "$@" ;;
+	*)
+	    if [ -d ${1} ]; then
+		cdg ${1}
+	    else
+		compgen -f -- "${1}"
+	    fi
+	;;
+      esac
     fi
   fi
 }
