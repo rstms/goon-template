@@ -54,7 +54,7 @@ goon() {
       case ${1} in 
 	init) ~/go/bin/goon-template init ${2} ;;
 	versions) find 2>/dev/null / -type f -name go | xargs go version | awk -F':' '{print $2}' | tr -d ' ' | sort -V;;
-	template) goon-template "$@" ;;
+	template) shift && goon-template "$@" ;;
 	*)
 	    if [ -d ${1} ]; then
 		cdg ${1}

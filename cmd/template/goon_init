@@ -70,8 +70,8 @@ cat $repo_template/.gitignore >>.gitignore
 cp $repo_template/.bumpversion.cfg .
 cp $repo_template/Makefile .
 
-
-go mod init
+# init with latest installed go version
+$(find 2>/dev/null / -type f -name go | xargs go version | awk -F':' '{print $2}' | tr -d ' ' | sort -V | tail -1) mod init
 cobra-cli init
 
 cp $repo_template/main_test.go .

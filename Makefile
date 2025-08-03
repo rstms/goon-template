@@ -2,8 +2,6 @@
 
 program != basename $$(pwd)
 
-go_version = go1.24.5
-
 latest_release != gh release list --json tagName --jq '.[0].tagName' | tr -d v
 version != cat VERSION
 
@@ -14,13 +12,14 @@ gitclean = $(if $(shell git status --porcelain),$(error git status is dirty),$(i
 $(program): build
 
 build: fmt
-	fix go build
+	fix go build . ./...
+	go build
 
 fmt: go.sum
 	fix go fmt . ./...
 
 go.mod:
-	$(go_version) mod init
+	go mod init
 
 go.sum: go.mod
 	go mod tidy

@@ -57,6 +57,10 @@ it using the goon_init script.
 		command.Stdout = os.Stdout
 		command.Stderr = os.Stderr
 		err = command.Run()
+		_, isExit := err.(*exec.ExitError)
+		if isExit {
+			os.Exit(command.ProcessState.ExitCode())
+		}
 		cobra.CheckErr(err)
 	},
 }

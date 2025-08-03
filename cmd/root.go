@@ -41,12 +41,15 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Version: "0.0.7",
 	Use:     "goon-template",
-	Short:   "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short:   "golang dev environment utility",
+	Long: `
+Provides various functions to manage go development environments.  Typically
+this program is called using functions sourced into the shell.
+
+This project contains the template used by 'goon init'
+
+'goon' is inspired by 'workon' from Python's virtualenvwrapper
+`,
 }
 
 func Execute() {
