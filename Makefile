@@ -2,7 +2,7 @@
 
 program != basename $$(pwd)
 
-latest_release != gh release list --json tagName --jq '.[0].tagName' | tr -d v
+latest_release != gh 2>/dev/null release list --json tagName --jq '.[0].tagName' | tr -d v
 version != cat VERSION
 
 rstms_modules = $(shell awk <go.mod '/^module/{next} /rstms/{print $$1}')

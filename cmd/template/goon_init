@@ -124,14 +124,13 @@ awkEdit cmd/version.go '{gsub(/"version called"/, "rootCmd.Name() + \" version \
 
 ###############################################################################
 #
-# create testdata
+# create testdata and test configs
 #
 ###############################################################################
 mkdir testdata
-cp $repo_template/config.yaml testdata
+echo -e "$repo:\n  verbose: true" > testdata/config.yaml
 mkdir cmd/testdata
-cp $repo_template/config.yaml cmd/testdata
-
+echo -e "$repo:\n  verbose: true" > cmd/testdata/config.yaml
 
 ###############################################################################
 #
@@ -143,7 +142,7 @@ make
 
 ###############################################################################
 #
-# git init and commit
+# initial git commit
 #
 ###############################################################################
 git init
