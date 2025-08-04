@@ -31,6 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"os"
 	"os/exec"
@@ -48,6 +49,10 @@ it using the goon_init script.
 	Run: func(cmd *cobra.Command, args []string) {
 		content, err := template.ReadFile("template/goon_init")
 		cobra.CheckErr(err)
+		if ViperGetBool("init.script") {
+			fmt.Println(string(content))
+			return
+		}
 		initScript, err := os.CreateTemp("", "goon_init")
 		defer os.Remove(initScript.Name())
 		_, err = initScript.Write(content)
@@ -67,4 +72,5 @@ it using the goon_init script.
 
 func init() {
 	rootCmd.AddCommand(initCmd)
+	OptionSwitch(initCmd, "script", "", "output script instead of initializing project")
 }
