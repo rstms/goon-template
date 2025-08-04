@@ -10,13 +10,8 @@ usage() {
     exit 1
 }
 
-if [ ! cobra-cli help >/dev/null 2>&1 ]; then
-    fail "cobra-cli not found.  (go install github.com/spf13/cobra-cli@latest)"
-fi
-
-if [ !  cobra-doc help >/dev/null 2>&1 ]; then
-    fail "cobra-doc not found. (go install github.com/rstms/cobra-doc@latest)"
-fi
+command -v cobra-cli >/dev/null 2>&1 || fail "cobra-cli not found.  (go install github.com/spf13/cobra-cli@latest)"
+command -v cobra-doc >/dev/null 2>&1 || fail "cobra-doc not found. (go install github.com/rstms/cobra-doc@latest)"
 
 tmpfile=$(mktemp)
 cleanup() {
