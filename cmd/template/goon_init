@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-cobra-cli help >/dev/null 2>&1 || go install github.com/spf13/cobra-cli@latest
-cobra-doc help >/dev/null 2>&1 || go install github.com/rstms/cobra-doc@latest
-
 fail() {
     echo >&2 "fail:" "$@" 
     exit 1
@@ -12,6 +9,14 @@ usage() {
     echo >&2 goon init REPO_NAME
     exit 1
 }
+
+if [ ! cobra-cli help >/dev/null 2>&1 ]; then
+    fail "cobra-cli not found.  (go install github.com/spf13/cobra-cli@latest)"
+fi
+
+if [ !  cobra-doc help >/dev/null 2>&1 ]; then
+    fail "cobra-doc not found. (go install github.com/rstms/cobra-doc@latest)"
+fi
 
 tmpfile=$(mktemp)
 cleanup() {
@@ -74,7 +79,11 @@ cp $repo_template/.bumpversion.cfg .
 cp $repo_template/Makefile .
 
 # init with latest installed go version
-$(find 2>/dev/null / -type f -name go | xargs go version | awk -F':' '{print $2}' | tr -d ' ' | sort -V | tail -1) mod init
+go_version=$(find 2>/dev/null / -type f -name go | xargs go version | awk -F':' '{print $2}' | tr -d ' ' | sort -V | tail -1)
+if [ ! $go_version >/dev/null 2>&1 ]; then 
+    go_version=go
+fi
+go mod init
 cobra-cli init
 
 cp $repo_template/main_test.go .
