@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+cobra-cli help >/dev/null 2>&1 || go install github.com/spf13/cobra-cli@latest
+cobra-doc help >/dev/null 2>&1 || go install github.com/rstms/cobra-doc@latest
+
 fail() {
     echo >&2 "fail:" "$@" 
     exit 1
