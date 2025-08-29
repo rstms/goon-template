@@ -71,6 +71,6 @@ it using the goon_init script.
 }
 
 func init() {
-	rootCmd.AddCommand(initCmd)
+	CobraAddCommand(rootCmd, rootCmd, initCmd)
 	OptionSwitch(initCmd, "script", "", "output script instead of initializing project")
 }

@@ -60,10 +60,5 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(InitConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file")
-	OptionString(rootCmd, "logfile", "l", "", "log filename")
-	OptionSwitch(rootCmd, "debug", "", "produce debug output")
-	OptionSwitch(rootCmd, "verbose", "v", "increase verbosity")
-	OptionSwitch(rootCmd, "force", "", "bypass confirmation prompts")
+	CobraInit(rootCmd)
 }

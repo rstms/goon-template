@@ -1,12 +1,11 @@
 # go makefile
 
 program != basename $$(pwd)
-
-latest_release != gh 2>/dev/null release list --json tagName --jq '.[0].tagName' | tr -d v
 version != cat VERSION
 
-rstms_modules = $(shell awk <go.mod '/^module/{next} /rstms/{print $$1}')
-
+latest_release != gh 2>/dev/null release list --json tagName --jq '.[0].tagName' | tr -d v
+rstms_modules != awk <go.mod '/^module/{next} /rstms/{print $$1}'
+latest_module_release = $(shell gh --repo $(1) release list --json tagName --jq '.[0].tagName')
 gitclean = $(if $(shell git status --porcelain),$(error git status is dirty),$(info git status is clean))
 
 $(program): build
@@ -38,9 +37,11 @@ release:
 	@$(if $(update),gh release delete -y v$(version),)
 	gh release create v$(version) --notes "v$(version)"
 
+
 update:
-	@echo updating modules
-	$(foreach module,$(rstms_modules),go get $(module)@latest;)
+	@echo checking dependencies for updated versions 
+	@$(foreach module,$(rstms_modules),go get $(module)@$(call latest_module_release,$(module));)
+	curl -L -o cmd/common.go https://raw.githubusercontent.com/rstms/go-common/master/proxy_common_go
 
 clean:
 	rm -f $(program) *.core 

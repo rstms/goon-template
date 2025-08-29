@@ -62,5 +62,5 @@ goon-template version >/dev/null 2>&1 && eval "$(goon-template bashrc)" || true
 }
 
 func init() {
-	rootCmd.AddCommand(bashrcCmd)
+	CobraAddCommand(rootCmd, rootCmd, bashrcCmd)
 }
