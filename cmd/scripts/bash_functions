@@ -44,10 +44,10 @@ fi
 
 if is_function "goon"; then :; else
 goon() {
-  cd $GOPATH/src/github.com/rstms
   if (( $# < 1 )); then
-    ls -1 .
+    ls -1 $GOPATH/src/github.com/rstms
   else
+    cd $GOPATH/src/github.com/rstms
     if [ $1 = '.' ]; then
       ungoon
     else 

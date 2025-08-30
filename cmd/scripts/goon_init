@@ -6,7 +6,7 @@ fail() {
 }
 
 usage() {
-    echo >&2 goon init REPO_NAME
+    echo >&2 goon init REPO_NAME TEMPLATE_DIR
     exit 1
 }
 
@@ -50,10 +50,11 @@ addOptionString() {
 
 [ -n "$GH_ORG" ] || fail GH_ORG unset
 [ -n "$1" ] || usage
+[ -n "$2" ] || usage
 
 export repo=$1
+export repo_template=$2
 repo_home=~/go/src/github.com/$GH_ORG
-repo_template=$repo_home/goon-template
 repo_root=$repo_home/$repo
 
 if [ -d "$repo_root" ]; then
@@ -69,8 +70,8 @@ echo "alias $repo=./$repo" >.postactivate
 chmod +x .postactivate
 
 echo "$repo" >.gitignore
-cat $repo_template/.gitignore >>.gitignore
-cp $repo_template/.bumpversion.cfg .
+cat $repo_template/dot_gitignore >>.gitignore
+cp $repo_template/dot_bumpversion.cfg .bumpversion.cfg
 cp $repo_template/Makefile .
 
 # init with latest installed go version
@@ -81,11 +82,8 @@ fi
 go mod init
 cobra-cli init
 
-cp $repo_template/main_test.go .
-cp $repo_template/cmd/cobra.go cmd/cobra.go
-cp $repo_template/cmd/root_test.go cmd/root_test.go
-cp $repo_template/cmd/config.go cmd/config.go
-cp $repo_template/cmd/version.go cmd/version.go
+cp $repo_template/main_test_go main_test.go
+cp $repo_template/root_test_go cmd/root_test.go
 
 ###############################################################################
 #
@@ -93,23 +91,22 @@ cp $repo_template/cmd/version.go cmd/version.go
 #
 ###############################################################################
 
-addOptionFlag cmd/root.go verbose v "increase verbosity"
-addOptionFlag cmd/root.go debug '' "produce debug output"
-addOptionString cmd/root.go config c '' "config file"
-addOptionString cmd/root.go logfile l '' "log filename"
-
 awkEdit cmd/root.go '/Use:/{printf("%s\n%s\n", "Version: \"0.0.1\",", $0);next}{print}'
-
 awkEdit cmd/root.go '/toggle/{next}{print}'
 awkEdit cmd/root.go '/rootCmd.PersistentFlags/{next}{print}'
-
-awkEdit cmd/root.go '{gsub(/OnInitialize\(initConfig\)/, "OnInitialize(InitConfig)"); print}'
-
+awkEdit cmd/root.go '/github.com\/spf13\/viper/{next}{print}'
+awkEdit cmd/root.go '{gsub(/cobra.OnInitialize\(initConfig\)/, "CobraInit(rootCmd)"); print}'
 awkEdit cmd/root.go '/^[[:space:]]*"fmt"[[:space:]]*$/{next} {print}'
-awkEdit cmd/root.go '/^[[:space:]]*"github.com\/spf13\/viper"[[:space:]]*$/{next} {print}'
-
-# remove initConfig function
 awkEdit cmd/root.go '/^\/\/ initConfig reads/{exit} {print}'
+
+
+###############################################################################
+#
+# add cmd/common.go
+#
+###############################################################################
+
+curl -sLo cmd/common.go https://raw.githubusercontent.com/rstms/go-common/master/proxy_common_go
 
 
 ###############################################################################
@@ -118,15 +115,6 @@ awkEdit cmd/root.go '/^\/\/ initConfig reads/{exit} {print}'
 # 
 ###############################################################################
 awkEdit cmd/root_test.go '/^package main/{print "package cmd"; next} /^func TestMain/{gsub(/TestMain/, "TestRoot"); print; next}{print}'
-
-
-###############################################################################
-#
-# version command
-#
-###############################################################################
-cobra-cli add version
-awkEdit cmd/version.go '{gsub(/"version called"/, "rootCmd.Name() + \" version \" + rootCmd.Version"); print}'
 
 
 ###############################################################################
@@ -145,13 +133,15 @@ echo -e "$repo:\n  verbose: true" > cmd/testdata/config.yaml
 #
 ###############################################################################
 go mod tidy
-make
+git init 
+gmake update
+gmake
 
 ###############################################################################
 #
 # initial git commit
 #
 ###############################################################################
-git init
+cobra-doc clean all
 git add .
 git commit -m "initial commit"

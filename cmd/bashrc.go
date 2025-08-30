@@ -55,7 +55,7 @@ goon-template version >/dev/null 2>&1 && eval "$(goon-template bashrc)" || true
 
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		content, err := template.ReadFile("template/bash_functions")
+		content, err := scriptTemplate.ReadFile("template/bash_functions")
 		cobra.CheckErr(err)
 		fmt.Println(string(content))
 	},

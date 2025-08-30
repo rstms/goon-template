@@ -31,11 +31,20 @@ POSSIBILITY OF SUCH DAMAGE.
 package cmd
 
 import (
-	"fmt"
+	"embed"
 	"github.com/spf13/cobra"
+	"io"
+	"io/fs"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
+
+//go:embed template/*
+var sourceTemplate embed.FS
+
+//go:embed scripts/*
+var scriptTemplate embed.FS
 
 var initCmd = &cobra.Command{
 	Use:   "init PROGRAM_NAME",
@@ -47,18 +56,23 @@ it using the goon_init script.
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		content, err := template.ReadFile("template/goon_init")
+		content, err := scriptTemplate.ReadFile("scripts/goon_init")
 		cobra.CheckErr(err)
-		if ViperGetBool("init.script") {
-			fmt.Println(string(content))
-			return
-		}
 		initScript, err := os.CreateTemp("", "goon_init")
 		defer os.Remove(initScript.Name())
 		_, err = initScript.Write(content)
 		cobra.CheckErr(err)
 		initScript.Close()
-		command := exec.Command("/bin/sh", initScript.Name(), args[0])
+		tempDir, err := os.MkdirTemp("", "goon-init-*")
+		cobra.CheckErr(err)
+		defer os.RemoveAll(tempDir)
+		templateFiles, err := fs.Glob(sourceTemplate, "template/*")
+		cobra.CheckErr(err)
+		for _, pathname := range templateFiles {
+			err = copyTemplateFile(tempDir, pathname)
+			cobra.CheckErr(err)
+		}
+		command := exec.Command("/bin/sh", initScript.Name(), args[0], tempDir)
 		command.Stdout = os.Stdout
 		command.Stderr = os.Stderr
 		err = command.Run()
@@ -70,7 +84,25 @@ it using the goon_init script.
 	},
 }
 
+func copyTemplateFile(tempDir, srcPathname string) error {
+	_, filename := filepath.Split(srcPathname)
+	srcFile, err := sourceTemplate.Open(srcPathname)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+	dstFile, err := os.Create(filepath.Join(tempDir, filename))
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func init() {
 	CobraAddCommand(rootCmd, rootCmd, initCmd)
-	OptionSwitch(initCmd, "script", "", "output script instead of initializing project")
 }
