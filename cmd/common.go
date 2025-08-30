@@ -6,11 +6,23 @@ import (
 	common "github.com/rstms/go-common"
 )
 
+type APIClient interface {
+	Close()
+	Get(path string, response interface{}) (string, error)
+	Post(path string, request, response interface{}, headers *map[string]string) (string, error)
+	Put(path string, request, response interface{}, headers *map[string]string) (string, error)
+	Delete(path string, response interface{}) (string, error)
+}
+
 type CobraCommand interface {
 }
 
 type Sendmail interface {
 	Send(to, from, subject string, body []byte) error
+}
+
+func NewAPIClient(prefix, url, certFile, keyFile, caFile string, headers *map[string]string) (APIClient, error) {
+	return common.NewAPIClient(prefix, url, certFile, keyFile, caFile, headers)
 }
 
 func OptionKey(cobraCmd CobraCommand, key string) string {
