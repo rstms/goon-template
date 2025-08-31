@@ -32,12 +32,15 @@ package cmd
 
 import (
 	"embed"
+	"fmt"
 	"github.com/spf13/cobra"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 //go:embed template/*
@@ -59,22 +62,47 @@ it using the goon_init script.
 		content, err := scriptTemplate.ReadFile("scripts/goon_init")
 		cobra.CheckErr(err)
 		initScript, err := os.CreateTemp("", "goon_init")
-		defer os.Remove(initScript.Name())
+		if !ViperGetBool("debug") {
+			defer os.Remove(initScript.Name())
+		}
 		_, err = initScript.Write(content)
 		cobra.CheckErr(err)
 		initScript.Close()
 		tempDir, err := os.MkdirTemp("", "goon-init-*")
 		cobra.CheckErr(err)
-		defer os.RemoveAll(tempDir)
+		if !ViperGetBool("debug") {
+			defer os.RemoveAll(tempDir)
+		}
 		templateFiles, err := fs.Glob(sourceTemplate, "template/*")
 		cobra.CheckErr(err)
 		for _, pathname := range templateFiles {
 			err = copyTemplateFile(tempDir, pathname)
 			cobra.CheckErr(err)
 		}
-		command := exec.Command("/bin/sh", initScript.Name(), args[0], tempDir)
+		env := []string{}
+		for k, v := range os.Environ() {
+			env = append(env, fmt.Sprintf("%s=%s", k, v))
+		}
+		for k, v := range ViperGetStringMapString("env") {
+			env = append(env, fmt.Sprintf("%s=%s", k, v))
+		}
+		if ViperGetBool("debug") {
+			env = append(env, "DEBUG=1")
+		}
+		if ViperGetBool("verbose") {
+			env = append(env, "VERBOSE=1")
+		}
+		cmdArgs := strings.Fields(ViperGetString("shell_args"))
+		cmdArgs = append(cmdArgs, initScript.Name())
+		cmdArgs = append(cmdArgs, args[0])
+		cmdArgs = append(cmdArgs, tempDir)
+		command := exec.Command(ViperGetString("shell"), cmdArgs...)
+		command.Env = env
 		command.Stdout = os.Stdout
 		command.Stderr = os.Stderr
+		if ViperGetBool("debug") {
+			log.Printf("command: %v\n", command)
+		}
 		err = command.Run()
 		_, isExit := err.(*exec.ExitError)
 		if isExit {

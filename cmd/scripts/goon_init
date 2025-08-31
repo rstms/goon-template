@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [ -n "$DEBUG" ]; then
+ set -x
+fi
+
 fail() {
     echo >&2 "fail:" "$@" 
     exit 1
@@ -54,8 +58,16 @@ addOptionString() {
 
 export repo=$1
 export repo_template=$2
+
 repo_home=~/go/src/github.com/$GH_ORG
 repo_root=$repo_home/$repo
+
+if [ -n "$VERBOSE" ]; then
+    echo "repo=$repo"
+    echo "repo_template=$repo"
+    echo "repo_home=$repo"
+    echo "repo_root=$repo"
+fi
 
 if [ -d "$repo_root" ]; then
     fail "repo exists"
