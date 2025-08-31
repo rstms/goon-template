@@ -3,7 +3,7 @@ module github.com/rstms/goon-template
 go 1.24.5
 
 require (
-	github.com/rstms/go-common v0.2.20
+	github.com/rstms/go-common v0.2.21
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.11.1

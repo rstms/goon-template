@@ -28,6 +28,8 @@ github.com/rstms/go-common v0.2.19 h1:COTfMqWHDovw1FbFhDh1t2DWSvco2khCwD0jcK/p84
 github.com/rstms/go-common v0.2.19/go.mod h1:X+YExXFyL7HOZwV8fB3VCqfehcBe2IqSaKzsacJQjb0=
 github.com/rstms/go-common v0.2.20 h1:b+/ZAMM6O/kO6p5NhhTaxRHTN6V4Yg1sE52Jp4YB6vI=
 github.com/rstms/go-common v0.2.20/go.mod h1:X+YExXFyL7HOZwV8fB3VCqfehcBe2IqSaKzsacJQjb0=
+github.com/rstms/go-common v0.2.21 h1:kK0cEmb/8xvz2YfjTlzk/imSc3vGKNa3FOEACDsDZU0=
+github.com/rstms/go-common v0.2.21/go.mod h1:X+YExXFyL7HOZwV8fB3VCqfehcBe2IqSaKzsacJQjb0=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/sagikazarmark/locafero v0.7.0 h1:5MqpDsTGNDhY8sGp0Aowyf0qKsPrhewaLSsFaodPcyo=
 github.com/sagikazarmark/locafero v0.7.0/go.mod h1:2za3Cg5rMaTMoG/2Ulr9AwtFaIppKXTRYnozin4aB5k=
