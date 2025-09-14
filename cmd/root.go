@@ -58,6 +58,10 @@ func Execute() {
 }
 func init() {
 	CobraInit(rootCmd)
-	OptionString(rootCmd, "shell", "", "/bin/sh", "path to shell")
+	shell := os.Getenv("SHELL")
+	if shell == "" {
+		shell = "/bin/sh"
+	}
+	OptionString(rootCmd, "shell", "", shell, "path to shell")
 	OptionString(rootCmd, "shell-args", "", "", "space-delimited string of shell options/arguments")
 }

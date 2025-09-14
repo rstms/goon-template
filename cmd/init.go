@@ -80,8 +80,8 @@ it using the goon_init script.
 			cobra.CheckErr(err)
 		}
 		env := []string{}
-		for k, v := range os.Environ() {
-			env = append(env, fmt.Sprintf("%s=%s", k, v))
+		for _, v := range os.Environ() {
+			env = append(env, v)
 		}
 		for k, v := range ViperGetStringMapString("env") {
 			env = append(env, fmt.Sprintf("%s=%s", k, v))
@@ -102,6 +102,7 @@ it using the goon_init script.
 		command.Stderr = os.Stderr
 		if ViperGetBool("debug") {
 			log.Printf("command: %v\n", command)
+			log.Printf("env: %s\n", FormatJSON(command.Env))
 		}
 		err = command.Run()
 		_, isExit := err.(*exec.ExitError)
