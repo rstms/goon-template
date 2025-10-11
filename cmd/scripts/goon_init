@@ -126,7 +126,7 @@ awkEdit cmd/root.go '/rootCmd.PersistentFlags/{next}{print}'
 awkEdit cmd/root.go '/github.com\/spf13\/viper/{next}{print}'
 awkEdit cmd/root.go '{gsub(/cobra.OnInitialize\(initConfig\)/, "CobraInit(rootCmd)"); print}'
 awkEdit cmd/root.go '/^[[:space:]]*"fmt"[[:space:]]*$/{next} {print}'
-awkEdit cmd/root.go '/^\/\/ initConfig reads/{exit} {print}'
+awkEdit cmd/root.go '/^func initConfig/{exit} {print}'
 
 
 ###############################################################################

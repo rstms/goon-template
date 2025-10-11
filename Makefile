@@ -5,7 +5,7 @@ version := $(shell cat VERSION)
 
 include make/common.mk
 
-default: show-vars
+default: build
 
 build: $(binary)
 
