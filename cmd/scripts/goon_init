@@ -82,6 +82,7 @@ echo "alias $repo=./$repo" >.postactivate
 chmod +x .postactivate
 
 echo "$repo" >.gitignore
+echo "${repo}.exe" >>.gitignore
 cat $repo_template/dot_gitignore >>.gitignore
 cp $repo_template/dot_bumpversion.cfg .bumpversion.cfg
 cp $repo_template/Makefile .
