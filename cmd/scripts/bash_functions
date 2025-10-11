@@ -42,6 +42,25 @@ cdg() {
 }
 fi
 
+if is_function "find_go_bins"; then :; else
+find_go_bins() {
+    echo $PATH | sed 's/[cC]:/\/c\//' | tr ':' '\n' | \
+    while read dir; do
+	if [ -d "$dir" ]; then
+	    find 2>/dev/null "$dir" -type f | grep 'go.exe'
+	fi
+    done
+}
+fi
+
+if is_function "find_go_versions"; then :; else
+find_go_versions() {
+    find_go_bins | while read bin; do
+	"$bin" version | cut -d' ' -f 3
+    done
+}
+fi
+
 if is_function "goon"; then :; else
 goon() {
   cd $GOPATH/src/github.com/rstms
@@ -53,7 +72,7 @@ goon() {
     else 
       case ${1} in 
 	init) ~/go/bin/goon-template init ${2} ;;
-	versions) find 2>/dev/null / -type f -name go | xargs go version | awk -F':' '{print $2}' | tr -d ' ' | sort -V;;
+	versions) find_go_versions | sort -V ;;
 	template) shift && goon-template "$@" ;;
 	*)
 	    if [ -d ${1} ]; then
@@ -68,3 +87,4 @@ goon() {
 }
 complete -f goon
 fi
+

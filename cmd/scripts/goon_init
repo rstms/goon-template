@@ -85,9 +85,26 @@ echo "$repo" >.gitignore
 cat $repo_template/dot_gitignore >>.gitignore
 cp $repo_template/dot_bumpversion.cfg .bumpversion.cfg
 cp $repo_template/Makefile .
+mkdir make
+cp $repo_template/common.mk make
+
+find_go_bins() {
+    echo $PATH | sed 's/[cC]:/\/c\//' | tr ':' '\n' | \
+    while read dir; do
+	if [ -d "$dir" ]; then
+	    find 2>/dev/null "$dir" -type f | grep 'go.exe'
+	fi
+    done
+}
+
+find_go_versions() {
+    find_go_bins | while read bin; do
+	"$bin" version | cut -d' ' -f 3
+    done
+}
 
 # init with latest installed go version
-go_version=$(find 2>/dev/null / -type f -name go | xargs go version | awk -F':' '{print $2}' | tr -d ' ' | sort -V | tail -1)
+go_version=$(find_go_versions | sort -V | tail -1)
 if [ ! $go_version >/dev/null 2>&1 ]; then 
     go_version=go
 fi

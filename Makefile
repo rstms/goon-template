@@ -1,16 +1,15 @@
 # go makefile
 
-program != basename $$(pwd)
-version != cat VERSION
+program := $(notdir $(shell pwd))
+version := $(shell cat VERSION)
 
-latest_release != gh 2>/dev/null release list --json tagName --jq '.[0].tagName' | tr -d v
-rstms_modules != awk <go.mod '/^module/{next} /rstms/{print $$1}'
-latest_module_release = $(shell gh --repo $(1) release list --json tagName --jq '.[0].tagName')
-gitclean = $(if $(shell git status --porcelain),$(error git status is dirty),$(info git status is clean))
+include make/common.mk
 
-$(program): build
+default: show-vars
 
-build: fmt
+build: $(binary)
+
+$(binary): fmt
 	fix go build . ./...
 	go build
 
@@ -36,20 +35,37 @@ release:
 	$(gitclean)
 	@$(if $(update),gh release delete -y v$(version),)
 	gh release create v$(version) --notes "v$(version)"
+	$(MAKE) build
 
+dist: dist/$(release_binary)
 
-update:
+dist/$(release_binary): $(binary)
+	mkdir -p dist
+	scp $< $(dist_target)/$(release_binary)
+	scp $< $(dist_target)/$(dist_binary)
+	cp $< $@
+
+release-upload: dist
+	cd dist; gh release upload $(latest_release) $(release_binary) $(CLOBBER)
+
+update-modules:
 	@echo checking dependencies for updated versions 
-	@$(foreach module,$(rstms_modules),go get $(module)@$(call latest_module_release,$(module));)
-	curl -L -o cmd/common.go https://raw.githubusercontent.com/rstms/go-common/master/proxy_common_go
+	@$(foreach module,$(rstms_modules),go get $(module)@$(call latest_module_release,$(module)) ;)
+	curl -Lso .proxy https://raw.githubusercontent.com/rstms/go-common/master/proxy_common_go
+	@$(foreach s,$(common_go),sed <.proxy >$(s) 's/^package cmd/package $(lastword $(subst /, ,$(dir $(s))))/' ;)
+	-rm .proxy
 
 clean:
-	rm -f $(program) *.core 
+	rm -f $(binary) *.core 
 	go clean
+	rm -rf dist && mkdir dist
 
 sterile: clean
-	which $(program) && go clean -i || true
+	go clean -i || true
 	go clean
 	go clean -cache
 	go clean -modcache
 	rm -f go.mod go.sum
+
+show-vars:
+	@$(foreach var,$(all_variables),echo $(var)=$($(var));)
