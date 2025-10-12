@@ -6,7 +6,7 @@ fi
 if is_function "ungoon"; then :; else
 ungoon() {
     if [ -n "$PROJECT_DIR" ]; then
-	export TMUX_WINDOW_NAME=$(hostname -s)
+	export TMUX_WINDOW_NAME=$(hostname 2>/dev/null -s || hostname)
 	unalias $(basename $PROJECT_DIR)
 	unset PROJECT_DIR
     fi
@@ -71,7 +71,10 @@ goon() {
       ungoon
     else 
       case ${1} in 
-	init) ~/go/bin/goon-template init ${2} ;;
+	init) 
+	    ~/go/bin/goon-template init ${2} 
+	    cdg ${2}
+	;;
 	versions) find_go_versions | sort -V ;;
 	template) shift && goon-template "$@" ;;
 	*)
