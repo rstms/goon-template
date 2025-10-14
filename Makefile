@@ -35,7 +35,7 @@ release:
 	$(gitclean)
 	@$(if $(update),gh release delete -y v$(version),)
 	gh release create v$(version) --notes "v$(version)"
-	$(MAKE) build
+	@$(MAKE) build
 
 dist: dist/$(release_binary)
 
