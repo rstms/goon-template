@@ -32,10 +32,10 @@ debug: fmt
 	go test -v -failfast -count=1 -run $(test) . ./...
 
 release:
+	@$(MAKE) build
 	$(gitclean)
 	@$(if $(update),gh release delete -y v$(version),)
 	gh release create v$(version) --notes "v$(version)"
-	@$(MAKE) build
 
 dist: dist/$(release_binary)
 
