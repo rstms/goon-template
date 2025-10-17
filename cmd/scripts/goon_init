@@ -164,7 +164,7 @@ echo -e "$repo:\n  verbose: true" > cmd/testdata/config.yaml
 ###############################################################################
 go mod tidy
 git init 
-gmake update
+gmake update-modules
 gmake
 
 ###############################################################################
