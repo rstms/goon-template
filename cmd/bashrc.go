@@ -31,34 +31,15 @@ POSSIBILITY OF SUCH DAMAGE.
 package cmd
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 )
 
 var bashrcCmd = &cobra.Command{
-	Use:   "bashrc",
-	Short: "output bash function source",
+	Use:   "bashrc SUBCOMMAND ...",
+	Short: "bashrc subcommands",
 	Long: `
-Output function definitions to be sourced into the bash environment
-
-Defines these functions: 
-
-    goon	    display or activate a project
-    ungoon	    undo the effects of goon 
-    cdg		    cd to the goon project dir
-    versions	    display installed go versions 
-    is_function	    (internal use)
-
-Include the following line in .bashrc:
-
-goon-template --version >/dev/null 2>&1 && eval "$(goon-template bashrc)" || true
-
+bashrc subcommands
 `,
-	Run: func(cmd *cobra.Command, args []string) {
-		content, err := scriptTemplate.ReadFile("scripts/bash_functions")
-		cobra.CheckErr(err)
-		fmt.Println(string(content))
-	},
 }
 
 func init() {

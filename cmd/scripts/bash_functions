@@ -90,4 +90,3 @@ goon() {
 }
 complete -f goon
 fi
-
