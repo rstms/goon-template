@@ -39,7 +39,7 @@ import (
 var cfgFile string
 
 var rootCmd = &cobra.Command{
-	Version: "1.0.0",
+	Version: "1.0.1",
 	Use:     "goon-template",
 	Short:   "golang project template tool",
 	Long: `
